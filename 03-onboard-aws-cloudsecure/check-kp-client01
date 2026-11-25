@@ -1,0 +1,13 @@
+#!/bin/bash
+# Heuristic: CloudSecure onboarding creates an IAM role and a CloudFormation stack with "illumio" in
+# the name. /opt/kestrel/.test-skip-cloudsecure is written only by the solve script for automated tests.
+# --- check helpers ---
+fail() { if command -v fail-message >/dev/null 2>&1; then fail-message "$1"; fi; echo "FAIL: $1"; exit 1; }
+need_pce() { [[ -s /root/.pce/env ]] || fail "No PCE details yet. Run pov-connect in the Client tab."; }
+# --- end check helpers ---
+[[ -f /opt/kestrel/.test-skip-cloudsecure ]] && exit 0
+AWS_REGION=$(cat /opt/kestrel/aws-region); export AWS_REGION
+roles=$(aws iam list-roles --query 'Roles[].RoleName' --output text 2>/dev/null | tr '\t' '\n' | grep -ci illumio || true)
+stacks=$(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
+         --query 'StackSummaries[].StackName' --output text 2>/dev/null | tr '\t' '\n' | grep -ci illumio || true)
+[[ $roles -ge 1 || $stacks -ge 1 ]] || fail "No Illumio role or CloudFormation stack in the AWS account yet. Finish the CloudFormation step from CloudSecure onboarding."

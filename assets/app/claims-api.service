@@ -1,0 +1,11 @@
+[Unit]
+Description=Kestrel Point Claims API
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/claims
+ExecStart=/opt/claims/venv/bin/gunicorn -b 127.0.0.1:8000 -w 2 claims_api:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

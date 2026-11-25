@@ -1,0 +1,6 @@
+#!/bin/bash
+set -uo pipefail
+[[ -s /root/.pce/env ]] || { echo "No PCE details; skipping"; exit 0; }
+. /root/.pce/env
+preflight "$PCE_FQDN:$PCE_PORT"
+kp preflight

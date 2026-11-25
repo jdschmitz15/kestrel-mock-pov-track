@@ -1,0 +1,6 @@
+# Windows check (PowerShell)
+if (-not (Select-String -Quiet -Path C:\kestrel\preflight.txt -Pattern 'PASS' -ErrorAction SilentlyContinue)) {
+  Write-Output "FAIL: Run preflight <your-pce-hostname> in a command prompt on kp-sql01. It must end in PASS."
+  exit 1
+}
+exit 0

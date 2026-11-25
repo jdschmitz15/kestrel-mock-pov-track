@@ -1,0 +1,55 @@
+# Kestrel Point core switch, as seen by the NEN. Schema follows upstream examples/ipfix_sample.yaml:
+# template fields use IANA camelCase names, data records use snake_case keys.
+flows:
+  - version: ipfix
+    header:
+      export_time: 1735141200
+      sequence_number: 1
+      observation_domain_id: 1
+    flowsets:
+      - type: template
+        template_id: 300
+        fields:
+          - field_type: sourceIPv4Address
+            field_length: 4
+          - field_type: destinationIPv4Address
+            field_length: 4
+          - field_type: packetDeltaCount
+            field_length: 8
+          - field_type: octetDeltaCount
+            field_length: 8
+          - field_type: sourceTransportPort
+            field_length: 2
+          - field_type: destinationTransportPort
+            field_length: 2
+          - field_type: protocolIdentifier
+            field_length: 1
+      - type: data
+        template_id: 300
+        records:
+          # Branch office users (no VEN) using the Claims app
+          - source_ipv4_address: "10.50.1.21"
+            destination_ipv4_address: "${WEB_IP}"
+            packet_delta_count: 40
+            octet_delta_count: 24000
+            source_transport_port: 51514
+            destination_transport_port: 80
+            protocol_identifier: 6
+          - source_ipv4_address: "10.50.1.37"
+            destination_ipv4_address: "${WEB_IP}"
+            packet_delta_count: 22
+            octet_delta_count: 13100
+            source_transport_port: 50122
+            destination_transport_port: 80
+            protocol_identifier: 6
+          # Old network scanner (no VEN) touching the Claims database: the IPFIX-only finding
+          - source_ipv4_address: "10.50.9.9"
+            destination_ipv4_address: "${SQL_IP}"
+            packet_delta_count: 6
+            octet_delta_count: 360
+            source_transport_port: 40001
+            destination_transport_port: 1433
+            protocol_identifier: 6
+destination:
+  ip: "${COLLECTOR_IP}"
+  port: ${COLLECTOR_PORT}

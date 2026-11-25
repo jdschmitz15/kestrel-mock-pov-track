@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Return a student's PCE org to empty: unpair workloads, delete lab rulesets, labels and the
+# pairing profile. Used by cleanup-kp-client01, and by hand before a cohort.
+# Usage: org-reset [--yes]
+set -uo pipefail
+if [[ ${1:-} != --yes ]]; then
+  read -r -p "This unpairs every workload in the org and deletes the lab's policy. Type yes: " a
+  [[ $a == yes ]] || exit 1
+fi
+
+echo "Unpairing managed workloads..."
+hrefs=$(pce workloads --managed | jq -c '[.[] | {href}]')
+if [[ $hrefs != "[]" ]]; then
+  pce raw PUT /workloads/unpair "{\"workloads\":$hrefs,\"ip_table_restore\":\"default\"}" >/dev/null
+fi
+
+echo "Deleting unmanaged workloads the lab created..."
+for h in $(pce raw GET "/workloads?managed=false&max_results=500" | jq -r '.[].href'); do
+  pce raw DELETE "$h" >/dev/null || true
+done
+
+echo "Deleting lab rulesets..."
+changed=0
+for name in "Claims | POV" "Portal | POV"; do
+  if rs=$(pce ruleset "$name" 2>/dev/null); then
+    pce raw DELETE "$(jq -r .href <<<"$rs")" >/dev/null && changed=1
+  fi
+done
+if [[ $changed == 1 ]]; then
+  pending=$(pce raw GET /sec_policy/pending | jq -c '[.[] | select(.rule_set) | {href: .rule_set.href}]' 2>/dev/null || echo '[]')
+  pce raw POST /sec_policy "{\"update_description\":\"Kestrel lab cleanup\",\"change_subset\":{\"rule_sets\":$pending}}" >/dev/null || true
+fi
+
+echo "Deleting the pairing profile and lab labels..."
+if p=$(pce pairing-profile 2>/dev/null); then pce raw DELETE "$(jq -r .href <<<"$p")" >/dev/null || true; fi
+while IFS=, read -r key value; do
+  if h=$(pce label-href "$key" "$value" 2>/dev/null); then pce raw DELETE "$h" >/dev/null 2>&1 || true; fi
+done < <(awk -F, 'NR==1{for(i=2;i<=NF;i++)k[i]=$i;next}{for(i=2;i<=NF;i++)print k[i]","$i}' \
+           /opt/kestrel/kestrel/labels.csv | sort -u)
+
+echo "Org reset finished. Remove the AWS account from CloudSecure in the PCE UI if it is still listed."

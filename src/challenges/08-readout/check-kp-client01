@@ -1,0 +1,20 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+msg=$(python3 - <<'PY'
+import re
+rows = {}
+for line in open("/root/kestrel/scoping-sheet.md"):
+    m = re.match(r"\|\s*([1-4])\s*\|([^|]*)\|([^|]*)\|([^|]*)\|", line)
+    if m:
+        rows[m.group(1)] = (m.group(3).strip(), m.group(4).strip())
+bad = []
+for n in "1234":
+    status, evidence = rows.get(n, ("", ""))
+    if status.lower().replace("*", "") not in ("met", "not met"):
+        bad.append(f"row {n} status")
+    elif len(evidence) < 10:
+        bad.append(f"row {n} evidence")
+print(", ".join(bad))
+PY
+)
+[[ -z $msg ]] || fail "The success criteria table is not complete: $msg. Status is Met or Not met, and evidence is one line."

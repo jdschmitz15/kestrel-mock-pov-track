@@ -1,0 +1,14 @@
+# --- test-only VEN pairing, used by solve scripts. Needs the PCE_TEST_* secrets. ---
+if (-not $env:PCE_TEST_FQDN) { Write-Output "PCE_TEST_* secrets not set; skipping VEN pairing"; exit 0 }
+if (Get-Service venAgentMonitorSvc -ErrorAction SilentlyContinue) { Write-Output "VEN already installed"; exit 0 }
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$port = if ($env:PCE_TEST_PORT) { $env:PCE_TEST_PORT } else { 443 }
+$base = "https://$($env:PCE_TEST_FQDN):$port/api/v2"
+$auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($env:PCE_TEST_KEY):$($env:PCE_TEST_SECRET)"))
+$h = @{ Authorization = "Basic $auth" }
+$prof = (Invoke-RestMethod -Headers $h "$base/orgs/$($env:PCE_TEST_ORG)/pairing_profiles?name=Kestrel-POV")[0].href
+$code = (Invoke-RestMethod -Method Post -Headers $h -ContentType 'application/json' -Body '{}' "$base$prof/pairing_key").activation_code
+$pair = "$env:windir\temp\pair.ps1"
+Invoke-WebRequest -UseBasicParsing -OutFile $pair "https://$($env:PCE_TEST_FQDN):$port/api/v25/software/ven/image?pair_script=pair.ps1&profile_id=$($prof.Split('/')[-1])"
+& powershell -NoProfile -ExecutionPolicy Bypass -File $pair -management-server "$($env:PCE_TEST_FQDN):$port" -activation-code $code
+# --- end test-only pairing ---

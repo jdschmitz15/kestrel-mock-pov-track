@@ -1,0 +1,19 @@
+#!/bin/bash
+# Portal web tier: nginx load-balancing to both app servers on 8080.
+set -eux
+hostnamectl set-hostname ${name}
+apt-get update && apt-get install -y nginx curl
+echo '${preflight_b64}' | base64 -d > /usr/local/bin/preflight && chmod 755 /usr/local/bin/preflight
+cat > /etc/nginx/sites-available/default <<'NGINX'
+upstream portal_app {
+%{ for ip in app_ips ~}
+    server ${ip}:8080;
+%{ endfor ~}
+}
+server {
+    listen 80 default_server;
+    location = /health { return 200 "ok"; }
+    location / { proxy_pass http://portal_app; }
+}
+NGINX
+systemctl restart nginx

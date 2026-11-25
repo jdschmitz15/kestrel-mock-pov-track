@@ -1,0 +1,48 @@
+#!/bin/bash
+# IPFIX exporter (no VEN): netflow_generator in Docker, sending to the NEN on kp-nen01:4739.
+set -euxo pipefail
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y docker.io
+systemctl enable --now docker
+mkdir -p /opt/ipfix-gen
+base64 -d <<'__B64__' | tar -xz -C /opt/ipfix-gen
+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
+__B64__
+docker build -t kestrel/ipfix-gen:v1 /opt/ipfix-gen
+ip() { getent hosts "$1" | awk '{print $1; exit}'; }
+for h in kp-nen01 kp-web01 kp-sql01; do
+  for _ in $(seq 60); do [[ -n "$(ip "$h")" ]] && break; sleep 5; done
+done
+docker rm -f ipfix-gen 2>/dev/null || true
+docker run -d --name ipfix-gen --restart unless-stopped \
+  -e COLLECTOR="$(ip kp-nen01):4739" \
+  -e WEB_IP="$(ip kp-web01)" \
+  -e SQL_IP="$(ip kp-sql01)" \
+  kestrel/ipfix-gen:v1 --interval 10

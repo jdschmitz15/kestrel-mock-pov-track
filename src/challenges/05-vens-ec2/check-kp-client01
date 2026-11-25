@@ -1,0 +1,21 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+need_pce
+out=$(pce workloads --managed 2>&1) || fail "Could not list workloads: $out"
+msg=$(python3 - "$out" <<'PY'
+import json, sys
+want = ["kp-pweb01", "kp-pweb02", "kp-papp01", "kp-papp02"]
+wl = {(w.get("hostname") or "").split(".")[0].lower(): w for w in json.loads(sys.argv[1])}
+problems = []
+for h in want:
+    w = wl.get(h)
+    if not w:
+        problems.append(f"{h}: no VEN")
+    elif not w.get("online"):
+        problems.append(f"{h}: offline")
+    elif w.get("enforcement_mode") != "visibility_only":
+        problems.append(f"{h}: {w.get('enforcement_mode')} (should be visibility_only)")
+print("; ".join(problems))
+PY
+)
+[[ -z $msg ]] || fail "Not all four EC2 VENs are ready: $msg"

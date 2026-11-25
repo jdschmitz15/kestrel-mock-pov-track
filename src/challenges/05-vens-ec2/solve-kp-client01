@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+#@include src/snippets/linux-pair.sh
+pce_test_ready || { echo "PCE_TEST_* secrets not set; skipping"; exit 0; }
+kp run aws "[ -x /opt/illumio_ven/illumio-ven-ctl ] || ( $(pce_test_pair_cmd) )"

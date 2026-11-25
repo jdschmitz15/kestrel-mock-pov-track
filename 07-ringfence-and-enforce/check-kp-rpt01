@@ -1,0 +1,8 @@
+#!/bin/bash
+# --- check helpers ---
+fail() { if command -v fail-message >/dev/null 2>&1; then fail-message "$1"; fi; echo "FAIL: $1"; exit 1; }
+need_pce() { [[ -s /root/.pce/env ]] || fail "No PCE details yet. Run pov-connect in the Client tab."; }
+# --- end check helpers ---
+if timeout 4 bash -c '</dev/tcp/kp-sql01/1433' 2>/dev/null; then
+  fail "kp-rpt01 can still reach kp-sql01 on 1433. Is kp-sql01 in Full enforcement and the ruleset provisioned?"
+fi

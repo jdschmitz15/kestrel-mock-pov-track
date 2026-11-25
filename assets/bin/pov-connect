@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Challenge 1: save this student's PCE details, test them, and create the Kestrel-POV
+# pairing profile (visibility only). Safe to run again.
+set -euo pipefail
+mkdir -p /root/.pce && chmod 700 /root/.pce
+ENV_FILE=/root/.pce/env
+
+ask() { local prompt=$1 var=$2 secret=${3:-}; local val
+  if [[ -n $secret ]]; then read -r -s -p "$prompt: " val; echo; else read -r -p "$prompt: " val; fi
+  printf '%s=%s\n' "$var" "$val" >> "$ENV_FILE.new"; }
+
+echo "Enter the PCE details from your welcome email."
+: > "$ENV_FILE.new"
+ask "PCE hostname (for example us-scp14.illum.io)" PCE_FQDN
+read -r -p "PCE port [443]: " port; printf 'PCE_PORT=%s\n' "${port:-443}" >> "$ENV_FILE.new"
+ask "Org ID" PCE_ORG
+ask "API key ID (api_...)" PCE_KEY
+ask "API secret" PCE_SECRET secret
+mv "$ENV_FILE.new" "$ENV_FILE" && chmod 600 "$ENV_FILE"
+
+echo "Testing the API key..."
+if ! pce raw GET "/labels?max_results=1" >/dev/null; then
+  echo "That didn't work. Check the hostname, org ID, key and secret, then run pov-connect again."
+  exit 1
+fi
+echo "Connected to org $(grep ^PCE_ORG= "$ENV_FILE" | cut -d= -f2)."
+
+if pce pairing-profile >/dev/null 2>&1; then
+  echo "Pairing profile Kestrel-POV already exists."
+else
+  pce raw POST /pairing_profiles '{"name":"Kestrel-POV","description":"Kestrel Point mock POV","enabled":true,"enforcement_mode":"visibility_only","visibility_level":"flow_summary"}' >/dev/null
+  echo "Created pairing profile Kestrel-POV (visibility only)."
+fi
+echo "Done. Open the PCE in the PCE tab and find Kestrel-POV under Pairing Profiles."

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+#@include src/snippets/linux-pair.sh
+pce_test_ready || { echo "PCE_TEST_* secrets not set; skipping"; exit 0; }
+command -v illumio-nen-ctl >/dev/null || { echo "NEN not installed"; exit 0; }
+code=$(pce_test_pair_cmd | sed -E 's/.*--activation-code ([^ ]+).*/\1/')
+illumio-nen-ctl activate --management-server "$PCE_TEST_FQDN:${PCE_TEST_PORT:-443}" --activation-code "$code" || true

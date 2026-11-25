@@ -1,0 +1,8 @@
+#!/bin/bash
+set -euo pipefail
+f=/root/kestrel/scoping-sheet.md
+sed -i \
+  -e 's/^| 1 | \(.*\) |  |  |$/| 1 | \1 | Met | Map: App Claims and App Portal show all workloads with 4 labels |/' \
+  -e 's/^| 2 | \(.*\) |  |  |$/| 2 | \1 | Met | CloudSecure: kp-papp01\/02 to RDS on 5432 from VPC flow logs |/' \
+  -e 's/^| 3 | \(.*\) |  |  |$/| 3 | \1 | Met | kp-rpt01 to kp-sql01:1433 blocked; curl http:\/\/kp-web01\/ returns 200 |/' \
+  -e 's/^| 4 | \(.*\) |  |  |$/| 4 | \1 | Met | NEN kp-nen01: 10.50.9.9 to kp-sql01:1433 from IPFIX |/' "$f"

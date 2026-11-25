@@ -1,0 +1,33 @@
+slug: kestrel-point-mock-pov
+id: orcifit1pvux
+title: Kestrel Point Mock POV
+teaser: Run an Illumio SaaS POV for a fictional insurer, from scoping sheet to readout.
+description: |-
+  You are the SE on a proof of value for Kestrel Point Insurance. Discovery is done and the
+  scoping sheet is signed off. In this track you connect to your own Illumio SaaS PCE org,
+  run pre-flight checks, onboard an AWS account to CloudSecure, install VENs on Linux and
+  Windows, pair a NEN that receives IPFIX, label two apps, ringfence one, and write the readout.
+
+  Environment per student: 8 Instruqt VMs, one AWS account (three-tier Portal app with RDS and
+  VPC flow logs), and one SaaS PCE org. About two hours.
+icon: ""
+tags:
+- illumio
+- enablement
+- pov
+owner: illumio
+developers:
+- jeff.schmitz@illumio.com
+idle_timeout: 1800
+timelimit: 9000
+lab_config:
+  extend_ttl: 1800
+  sidebar_enabled: true
+  feedback_recap_enabled: true
+  feedback_tab_enabled: false
+  loadingMessages: true
+  hideStopButton: false
+  default_layout: AssignmentRight
+  default_layout_sidebar_size: 33
+checksum: "15020040588194578366"
+enhanced_loading: false

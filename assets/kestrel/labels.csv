@@ -1,0 +1,11 @@
+hostname,app,env,loc,role
+kp-web01,Claims,POV,Instruqt,Web
+kp-sql01,Claims,POV,Instruqt,DB
+kp-rpt01,Reporting,POV,Instruqt,Batch
+kp-client01,Users,POV,Instruqt,Client
+kp-ubu01,VENTest,POV,Instruqt,Linux
+kp-win01,VENTest,POV,Instruqt,Windows
+kp-pweb01,Portal,POV,AWS,Web
+kp-pweb02,Portal,POV,AWS,Web
+kp-papp01,Portal,POV,AWS,App
+kp-papp02,Portal,POV,AWS,App

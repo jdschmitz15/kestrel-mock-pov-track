@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Reach the Portal app's EC2 instances through AWS Systems Manager (no SSH keys, no public IPs).
+#   kp ssh kp-pweb01            interactive shell on one instance
+#   kp run aws '<command>'      run a command on all four Portal instances
+#   kp run kp-papp01 '<cmd>'    run a command on one instance
+#   kp preflight                run preflight on all four and save ~/kestrel/preflight-aws.txt
+#   kp list                     show the instances
+set -euo pipefail
+: "${AWS_REGION:=$(cat /opt/kestrel/aws-region 2>/dev/null || echo us-east-1)}"
+export AWS_REGION AWS_DEFAULT_REGION=$AWS_REGION
+
+ids_for() {
+  local filter
+  if [[ $1 == aws ]]; then filter="Name=tag:Role,Values=portal-web,portal-app"
+  else filter="Name=tag:Name,Values=$1"; fi
+  aws ec2 describe-instances --filters "$filter" Name=instance-state-name,Values=running \
+    --query 'Reservations[].Instances[].InstanceId' --output text
+}
+
+name_of() {
+  aws ec2 describe-instances --instance-ids "$1" \
+    --query 'Reservations[0].Instances[0].Tags[?Key==`Name`]|[0].Value' --output text
+}
+
+run() {
+  local target=$1 cmd=$2 ids cid
+  ids=$(ids_for "$target")
+  [[ -n $ids ]] || { echo "kp: no running instances for $target" >&2; exit 1; }
+  # shellcheck disable=SC2086
+  cid=$(aws ssm send-command --instance-ids $ids --document-name AWS-RunShellScript \
+        --parameters "$(jq -cn --arg c "$cmd" '{commands:[$c]}')" \
+        --query Command.CommandId --output text)
+  for id in $ids; do
+    aws ssm wait command-executed --command-id "$cid" --instance-id "$id" 2>/dev/null || true
+    echo "=== $(name_of "$id") ==="
+    aws ssm get-command-invocation --command-id "$cid" --instance-id "$id" \
+      --query '[StandardOutputContent,StandardErrorContent]' --output text
+  done
+}
+
+case "${1:-}" in
+  ssh)  id=$(ids_for "${2:?usage: kp ssh <name>}"); exec aws ssm start-session --target "$id" ;;
+  run)  run "${2:?usage: kp run aws|<name> <command>}" "${3:?missing command}" ;;
+  preflight)
+    . /root/.pce/env
+    mkdir -p /root/kestrel
+    run aws "preflight $PCE_FQDN:$PCE_PORT" | tee /root/kestrel/preflight-aws.txt ;;
+  list) aws ec2 describe-instances --filters Name=tag:Role,Values=portal-web,portal-app \
+          --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value,InstanceId,PrivateIpAddress,State.Name]' \
+          --output table ;;
+  *) sed -n '2,8p' "$0"; exit 1 ;;
+esac

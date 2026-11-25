@@ -1,0 +1,4 @@
+# Challenge 6: answer each question on its line after the colon.
+reaches-claims-db-from-outside: 
+portal-app-talks-to-without-a-ven: 
+seen-only-through-ipfix: 

@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Small Illumio PCE REST helper for the Kestrel Point lab.
+
+Reads credentials from /root/.pce/env (written by pov-connect). Output is JSON so scripts
+can pipe it to jq.
+
+  pce raw GET /labels                       any API call, path relative to /orgs/<org>
+  pce raw POST /labels '{"key":"app","value":"Claims"}'
+  pce workloads [--managed] [--online] [--mode visibility_only|full|...] [--host NAME]
+  pce label-href KEY VALUE [--create]       print a label href
+  pce ruleset NAME [--active]               print a ruleset (draft by default)
+  pce pairing-key                           print a fresh activation code for Kestrel-POV
+"""
+import base64, json, os, ssl, sys, urllib.error, urllib.parse, urllib.request
+
+ENV_FILE = os.environ.get("PCE_ENV_FILE", "/root/.pce/env")
+PROFILE = "Kestrel-POV"
+
+
+def load_env():
+    env = {}
+    if os.path.exists(ENV_FILE):
+        for line in open(ENV_FILE):
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                env[k] = v.strip().strip('"')
+    missing = [k for k in ("PCE_FQDN", "PCE_PORT", "PCE_ORG", "PCE_KEY", "PCE_SECRET") if not env.get(k)]
+    if missing:
+        sys.exit(f"pce: missing {', '.join(missing)} in {ENV_FILE}. Run pov-connect first.")
+    return env
+
+
+ENV = None
+
+
+def call(method, path, body=None, org=True):
+    global ENV
+    ENV = ENV or load_env()
+    base = f"https://{ENV['PCE_FQDN']}:{ENV['PCE_PORT']}/api/v2"
+    if path.startswith("/orgs/") or not org:
+        url = base + path
+    else:
+        url = f"{base}/orgs/{ENV['PCE_ORG']}{path}"
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method)
+    token = base64.b64encode(f"{ENV['PCE_KEY']}:{ENV['PCE_SECRET']}".encode()).decode()
+    req.add_header("Authorization", f"Basic {token}")
+    req.add_header("Accept", "application/json")
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=30) as r:
+            raw = r.read()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        sys.exit(f"pce: {method} {path} -> HTTP {e.code}: {e.read().decode()[:300]}")
+    except urllib.error.URLError as e:
+        sys.exit(f"pce: cannot reach {url}: {e.reason}")
+
+
+def workloads(args):
+    q = {"max_results": "500"}
+    if "--managed" in args:
+        q["managed"] = "true"
+    items = call("GET", "/workloads?" + urllib.parse.urlencode(q))
+    if "--online" in args:
+        items = [w for w in items if w.get("online")]
+    if "--mode" in args:
+        mode = args[args.index("--mode") + 1]
+        items = [w for w in items if w.get("enforcement_mode") == mode]
+    if "--host" in args:
+        host = args[args.index("--host") + 1]
+        items = [w for w in items if (w.get("hostname") or "").split(".")[0] == host]
+    return items
+
+
+def label_href(key, value, create=False):
+    found = call("GET", "/labels?" + urllib.parse.urlencode({"key": key, "value": value}))
+    for lab in found:
+        if lab.get("key") == key and lab.get("value") == value:
+            return lab["href"]
+    if create:
+        return call("POST", "/labels", {"key": key, "value": value})["href"]
+    return None
+
+
+def ruleset(name, active=False):
+    ver = "active" if active else "draft"
+    for rs in call("GET", f"/sec_policy/{ver}/rule_sets?" + urllib.parse.urlencode({"name": name})):
+        if rs.get("name") == name:
+            return rs
+    return None
+
+
+def pairing_profile():
+    for p in call("GET", "/pairing_profiles?" + urllib.parse.urlencode({"name": PROFILE})):
+        if p.get("name") == PROFILE:
+            return p
+    return None
+
+
+def main(argv):
+    if not argv or argv[0] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+    cmd, args = argv[0], argv[1:]
+    if cmd == "raw":
+        body = json.loads(args[2]) if len(args) > 2 else None
+        out = call(args[0].upper(), args[1], body)
+    elif cmd == "workloads":
+        out = workloads(args)
+    elif cmd == "label-href":
+        out = label_href(args[0], args[1], "--create" in args)
+        if out is None:
+            return 1
+        print(out)
+        return 0
+    elif cmd == "ruleset":
+        out = ruleset(args[0], "--active" in args)
+        if out is None:
+            return 1
+    elif cmd == "pairing-profile":
+        out = pairing_profile()
+        if out is None:
+            return 1
+    elif cmd == "pairing-key":
+        prof = pairing_profile()
+        if prof is None:
+            sys.exit("pce: pairing profile Kestrel-POV not found. Run pov-connect first.")
+        print(call("POST", prof["href"] + "/pairing_key", {})["activation_code"])
+        return 0
+    else:
+        sys.exit(f"pce: unknown command {cmd}")
+    print(json.dumps(out, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+[[ -s /root/.pce/env ]] || { echo "No PCE details; skipping"; exit 0; }
+python3 - <<'PY'
+import importlib.machinery, importlib.util
+loader = importlib.machinery.SourceFileLoader("pce", "/usr/local/bin/pce")
+spec = importlib.util.spec_from_loader("pce", loader); pce = importlib.util.module_from_spec(spec); loader.exec_module(pce)
+L = lambda k, v: {"label": {"href": pce.label_href(k, v, create=True)}}
+tcp = lambda *ports: [{"port": p, "proto": 6} for p in ports]
+anyip = pce.call("GET", "/sec_policy/active/ip_lists?name=Any")[0]["href"].replace("/active/", "/draft/")
+rs = pce.ruleset("Claims | POV")
+if rs is None:
+    rs = pce.call("POST", "/sec_policy/draft/rule_sets",
+                  {"name": "Claims | POV", "scopes": [[L("app", "Claims"), L("env", "POV")]]})
+    as_wl = {"providers": ["workloads"], "consumers": ["workloads"]}
+    rules = [
+        {"providers": [L("role", "Web")], "consumers": [L("role", "Client"), L("app", "Users")],
+         "unscoped_consumers": True, "ingress_services": tcp(80)},
+        {"providers": [L("role", "DB")], "consumers": [L("role", "Web")],
+         "unscoped_consumers": False, "ingress_services": tcp(1433)},
+        {"providers": [{"actors": "ams"}], "consumers": [{"ip_list": {"href": anyip}}],
+         "unscoped_consumers": True, "ingress_services": tcp(22, 3389, 5985)},
+        {"providers": [{"ip_list": {"href": anyip}}], "consumers": [{"actors": "ams"}],
+         "unscoped_consumers": False, "ingress_services": [{"port": 53, "proto": 17}, {"port": 53, "proto": 6}]},
+    ]
+    for r in rules:
+        r.update(enabled=True, resolve_labels_as=as_wl)
+        pce.call("POST", rs["href"] + "/sec_rules", r)
+pce.call("POST", "/sec_policy", {"update_description": "Claims | POV (solve)",
+                                 "change_subset": {"rule_sets": [{"href": rs["href"]}]}})
+for h in ("kp-web01", "kp-sql01"):
+    w = [w for w in pce.call("GET", "/workloads?managed=true&max_results=500")
+         if (w.get("hostname") or "").split(".")[0].lower() == h][0]
+    pce.call("PUT", w["href"], {"enforcement_mode": "full"})
+print("Claims | POV provisioned; kp-web01 and kp-sql01 in full enforcement")
+PY
+sleep 45   # give the VENs time to pick up policy

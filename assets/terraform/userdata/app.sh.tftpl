@@ -1,0 +1,26 @@
+#!/bin/bash
+# Portal app tier on Rocky 9: Flask API on 8080 talking to RDS Postgres.
+set -eux
+hostnamectl set-hostname ${name}
+dnf install -y python3-pip curl https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+systemctl enable --now amazon-ssm-agent
+echo '${preflight_b64}' | base64 -d > /usr/local/bin/preflight && chmod 755 /usr/local/bin/preflight
+mkdir -p /opt/portal
+echo '${api_b64}' | base64 -d > /opt/portal/portal_api.py
+python3 -m venv /opt/portal/venv
+/opt/portal/venv/bin/pip install flask gunicorn psycopg2-binary
+cat > /etc/systemd/system/portal-api.service <<'UNIT'
+[Unit]
+Description=Kestrel Point Portal API
+After=network-online.target
+[Service]
+WorkingDirectory=/opt/portal
+Environment=PORTAL_DB_HOST=${db_host}
+Environment=PORTAL_DB_PASSWORD=${db_password}
+ExecStart=/opt/portal/venv/bin/gunicorn -b 0.0.0.0:8080 -w 2 portal_api:app
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+firewall-cmd --permanent --add-port=8080/tcp 2>/dev/null && firewall-cmd --reload || true
+systemctl daemon-reload && systemctl enable --now portal-api

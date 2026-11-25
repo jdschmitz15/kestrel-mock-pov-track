@@ -1,0 +1,5 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+need_pce
+pce raw GET "/labels?max_results=1" >/dev/null 2>&1 || fail "The PCE API did not accept your key. Run pov-connect again and check the hostname, org ID, key and secret."
+pce pairing-profile >/dev/null 2>&1 || fail "Pairing profile Kestrel-POV not found. Run pov-connect again."

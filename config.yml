@@ -1,0 +1,87 @@
+version: "3"
+containers:
+# Remote desktop gateway for the two Windows VMs (Instruqt has no native RDP tab).
+- name: guac
+  image: gcr.io/instruqt/guacamole
+  shell: /bin/bash
+  ports:
+  - 8080
+  memory: 1024
+# AWS console links and credentials for the student's account.
+- name: cloud-client
+  image: gcr.io/instruqt/cloud-client
+  shell: /bin/bash
+  ports:
+  - 80
+  memory: 256
+virtualmachines:
+# Claims app: web tier (Linux) and database tier (Windows)
+- name: kp-web01
+  image: ubuntu-os-cloud/ubuntu-2204-lts
+  shell: /bin/bash
+  machine_type: n1-standard-1
+- name: kp-sql01
+  image: instruqt/windows-server
+  machine_type: n1-standard-2
+# Neighbours of the Claims app
+- name: kp-rpt01
+  image: rocky-linux-cloud/rocky-linux-9
+  shell: /bin/bash
+  machine_type: n1-standard-1
+- name: kp-client01
+  image: debian-cloud/debian-12
+  shell: /bin/bash
+  machine_type: n1-standard-1
+# Standalone VEN practice hosts
+- name: kp-ubu01
+  image: ubuntu-os-cloud/ubuntu-2204-lts
+  shell: /bin/bash
+  machine_type: n1-standard-1
+- name: kp-win01
+  image: instruqt/windows-server
+  machine_type: n1-standard-2
+# NEN (no VEN) and the IPFIX exporter (no VEN)
+- name: kp-nen01
+  image: rocky-linux-cloud/rocky-linux-9
+  shell: /bin/bash
+  machine_type: n2-standard-2          # 2 vCPU, 8 GB for the NEN
+- name: kp-flow01
+  image: ubuntu-os-cloud/ubuntu-2204-lts
+  shell: /bin/bash
+  machine_type: n1-standard-1
+aws_accounts:
+- name: kestrel
+  services:
+  - ec2                    # EC2, VPC, subnets, NAT, security groups, flow logs
+  - elasticloadbalancing   # Portal ALB
+  - rds                    # Portal database and replica
+  - s3                     # flow log bucket
+  - logs                   # flow log delivery to S3 (logs:CreateLogDelivery)
+  - cloudwatch
+  - iam                    # SSM instance role; CloudSecure onboarding role
+  - sts
+  - ssm                    # kp ssh / kp run to the EC2 instances
+  - cloudformation         # CloudSecure onboarding stack
+  - kms
+  regions:
+  - us-east-1
+  - us-west-2
+  - eu-west-1
+  managed_policies:
+  # CloudSecure onboarding creates IAM roles and a CloudFormation stack. Scope down later.
+  - arn:aws:iam::aws:policy/AdministratorAccess
+secrets:
+# URL the NEN RPM can be downloaded from (for example a pre-signed S3 URL). The RPM comes
+# from the Illumio support portal and is not stored in this repo.
+#- name: NEN_RPM_URL
+# Read-only token for the private GitHub repo that holds the NEN RPM. Set to "none" for a public URL.
+#- name: NEN_GITHUB_TOKEN
+# Test-only: a throwaway PCE org that the solve scripts use for `instruqt track test`.
+# Students never see these; they enter their own org details with pov-connect.
+# Uncomment after creating these in Instruqt team settings (each must exist there or push fails).
+# Without them the solve scripts skip PCE steps.
+# - name: PCE_TEST_FQDN
+# - name: PCE_TEST_PORT
+# - name: PCE_TEST_ORG
+# - name: PCE_TEST_KEY
+# - name: PCE_TEST_SECRET

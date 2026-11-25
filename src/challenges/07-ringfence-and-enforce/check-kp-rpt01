@@ -1,0 +1,5 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+if timeout 4 bash -c '</dev/tcp/kp-sql01/1433' 2>/dev/null; then
+  fail "kp-rpt01 can still reach kp-sql01 on 1433. Is kp-sql01 in Full enforcement and the ruleset provisioned?"
+fi

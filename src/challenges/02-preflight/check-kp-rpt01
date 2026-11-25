@@ -1,0 +1,3 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+grep -q 'PASS' /root/preflight.txt 2>/dev/null || fail "Run preflight <your-pce-hostname> as root on kp-rpt01. It must end in PASS."

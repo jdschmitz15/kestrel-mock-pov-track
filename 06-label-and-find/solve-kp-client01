@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+[[ -s /root/.pce/env ]] || { echo "No PCE details; skipping"; exit 0; }
+pce workloads > /tmp/wl.json
+tail -n +2 /opt/kestrel/kestrel/labels.csv | while IFS=, read -r host app env loc role; do
+  href=$(python3 -c 'import json,sys; print(next((w["href"] for w in json.load(open("/tmp/wl.json")) if (w.get("hostname") or "").split(".")[0].lower()==sys.argv[1]), ""))' "$host")
+  [[ -n $href ]] || { echo "skip $host (not paired)"; continue; }
+  body=$(printf '{"labels":[{"href":"%s"},{"href":"%s"},{"href":"%s"},{"href":"%s"}]}' \
+    "$(pce label-href app "$app" --create)" "$(pce label-href env "$env" --create)" \
+    "$(pce label-href loc "$loc" --create)" "$(pce label-href role "$role" --create)")
+  pce raw PUT "$href" "$body" >/dev/null && echo "labelled $host"
+done
+cat > /root/kestrel/answers.txt <<'ANS'
+# Challenge 6: answer each question on its line after the colon.
+reaches-claims-db-from-outside: kp-rpt01
+portal-app-talks-to-without-a-ven: RDS Postgres
+seen-only-through-ipfix: 10.50.9.9
+ANS

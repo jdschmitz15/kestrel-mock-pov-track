@@ -1,0 +1,3 @@
+# Windows solve (PowerShell). Needs the PCE_TEST_* secrets.
+if (-not $env:PCE_TEST_FQDN) { Write-Output "PCE_TEST_* secrets not set; skipping"; exit 0 }
+& powershell -NoProfile -ExecutionPolicy Bypass -File C:\kestrel\preflight.ps1 "$($env:PCE_TEST_FQDN):$(if ($env:PCE_TEST_PORT) { $env:PCE_TEST_PORT } else { 443 })"

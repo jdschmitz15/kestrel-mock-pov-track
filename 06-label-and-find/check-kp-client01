@@ -1,0 +1,31 @@
+#!/bin/bash
+# --- check helpers ---
+fail() { if command -v fail-message >/dev/null 2>&1; then fail-message "$1"; fi; echo "FAIL: $1"; exit 1; }
+need_pce() { [[ -s /root/.pce/env ]] || fail "No PCE details yet. Run pov-connect in the Client tab."; }
+# --- end check helpers ---
+need_pce
+labels=$(pce raw GET "/labels?max_results=1000" 2>&1) || fail "Could not read labels: $labels"
+wls=$(pce workloads 2>&1) || fail "Could not list workloads: $wls"
+msg=$(python3 - "$labels" "$wls" <<'PY'
+import csv, json, sys
+labels = {l["href"]: (l["key"], l["value"]) for l in json.loads(sys.argv[1])}
+wl = {(w.get("hostname") or w.get("name") or "").split(".")[0].lower(): w for w in json.loads(sys.argv[2])}
+problems = []
+for row in csv.DictReader(open("/opt/kestrel/kestrel/labels.csv")):
+    h = row.pop("hostname")
+    w = wl.get(h)
+    if not w:
+        problems.append(f"{h}: not in the PCE"); continue
+    have = dict(labels.get(l["href"], ("?", "?")) for l in w.get("labels", []))
+    wrong = [f"{k}={v}" for k, v in row.items() if have.get(k) != v]
+    if wrong:
+        problems.append(f"{h} needs {', '.join(wrong)}")
+print("; ".join(problems[:4]) + (" ..." if len(problems) > 4 else ""))
+PY
+)
+[[ -z $msg ]] || fail "Labels don't match labels.csv yet: $msg"
+a=/root/kestrel/answers.txt
+ans() { grep -i "^$1:" "$a" | cut -d: -f2- ; }
+ans reaches-claims-db-from-outside | grep -qi 'kp-rpt01' || fail "Question 1 isn't right yet. Which workload besides kp-web01 talks to kp-sql01 on 1433?"
+ans portal-app-talks-to-without-a-ven | grep -qiE 'rds|postgres|database' || fail "Question 2 isn't right yet. What does the Portal app tier connect to that has no VEN?"
+ans seen-only-through-ipfix | grep -q '10\.50\.9\.9' || fail "Question 3 isn't right yet. Look for an IP address on kp-sql01:1433 that only the NEN reports."

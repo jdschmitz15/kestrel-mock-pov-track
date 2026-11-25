@@ -1,0 +1,26 @@
+#!/bin/bash
+# --- check helpers ---
+fail() { if command -v fail-message >/dev/null 2>&1; then fail-message "$1"; fi; echo "FAIL: $1"; exit 1; }
+need_pce() { [[ -s /root/.pce/env ]] || fail "No PCE details yet. Run pov-connect in the Client tab."; }
+# --- end check helpers ---
+need_pce
+out=$(pce workloads --managed 2>&1) || fail "Could not list workloads: $out"
+msg=$(python3 - "$out" <<'PY'
+import json, sys
+want = ["kp-web01", "kp-sql01", "kp-rpt01", "kp-client01", "kp-ubu01", "kp-win01"]
+wl = {(w.get("hostname") or "").split(".")[0].lower(): w for w in json.loads(sys.argv[1])}
+problems = []
+for h in want:
+    w = wl.get(h)
+    if not w:
+        problems.append(f"{h}: no VEN")
+    elif not w.get("online"):
+        problems.append(f"{h}: offline")
+    elif w.get("enforcement_mode") != "visibility_only":
+        problems.append(f"{h}: {w.get('enforcement_mode')} (should be visibility_only)")
+print("; ".join(problems))
+PY
+)
+[[ -z $msg ]] || fail "Not all six VENs are ready: $msg"
+nen=$(pce raw GET /network_enforcement_nodes 2>&1) || fail "Could not read NENs from the PCE: $nen"
+[[ $(echo "$nen" | jq 'length') -ge 1 ]] || fail "No NEN paired yet. Activate kp-nen01 with illumio-nen-ctl activate."

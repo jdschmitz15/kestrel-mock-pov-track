@@ -1,0 +1,9 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+need_pce
+pce ruleset "Claims | POV" --active >/dev/null 2>&1 || fail "No provisioned ruleset named 'Claims | POV'. Create it, then Provision."
+for h in kp-web01 kp-sql01; do
+  [[ $(pce workloads --host "$h" | jq -r '.[0].enforcement_mode') == full ]] || fail "$h is not in Full enforcement yet."
+done
+code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://kp-web01/ || true)
+[[ $code == 200 ]] || fail "The Claims app returned $code instead of 200. Check rules 1 and 2 (Users to Web on 80, Web to DB on 1433)."

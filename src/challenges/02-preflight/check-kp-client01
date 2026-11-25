@@ -1,0 +1,7 @@
+#!/bin/bash
+#@include src/snippets/check-lib.sh
+grep -q 'PASS' /root/preflight.txt 2>/dev/null || fail "Run preflight <your-pce-hostname> in the Client tab. Every line must end in PASS."
+f=/root/kestrel/preflight-aws.txt
+[[ -s $f ]] || fail "Run kp preflight in the Client tab to check the four AWS servers."
+n=$(grep -c '| PASS' "$f" || true)
+[[ $n -ge 4 ]] || fail "Only $n of 4 AWS servers passed. Look at $f, fix the problem, and run kp preflight again."

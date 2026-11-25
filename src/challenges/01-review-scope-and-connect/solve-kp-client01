@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+#@include src/snippets/client-test-env.sh
+[[ -s /root/.pce/env ]] || { echo "PCE_TEST_* secrets not set; nothing to solve"; exit 0; }
+pce pairing-profile >/dev/null 2>&1 || pce raw POST /pairing_profiles \
+  '{"name":"Kestrel-POV","description":"Kestrel Point mock POV","enabled":true,"enforcement_mode":"visibility_only","visibility_level":"flow_summary"}' >/dev/null

@@ -1,0 +1,4 @@
+#!/bin/bash
+# CloudSecure onboarding needs the PCE UI, so automated tests skip it.
+echo "CloudSecure onboarding is manual; marking as skipped for automated tests."
+touch /opt/kestrel/.test-skip-cloudsecure

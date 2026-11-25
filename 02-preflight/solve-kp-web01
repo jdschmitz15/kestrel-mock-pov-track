@@ -1,0 +1,3 @@
+#!/bin/bash
+[[ -n ${PCE_TEST_FQDN:-} ]] || { echo "PCE_TEST_* secrets not set; skipping"; exit 0; }
+preflight "$PCE_TEST_FQDN:${PCE_TEST_PORT:-443}"
