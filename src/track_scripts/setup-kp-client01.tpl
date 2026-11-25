@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 AWS_REGION="${AWS_REGION:-us-east-1}"   # change here to move the Portal app; must be in config.yml regions
 
 apt-get update
-apt-get install -y curl jq unzip python3 netcat-openbsd gnupg lsb-release cron
+apt-get install -y curl jq unzip python3 gnupg lsb-release cron
 
 # AWS CLI v2, Session Manager plugin, Terraform
 curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscli.zip
@@ -61,3 +61,8 @@ cat > /etc/cron.d/kestrel-traffic <<'CRON'
 * * * * * root sleep 30; /usr/local/bin/kestrel-traffic
 CRON
 systemctl enable --now cron
+
+# Lab traffic between the servers (rows in assets/traffic/traffic.csv)
+#@file assets/traffic/traffic.csv /opt/traffic/traffic.csv 0644
+#@file assets/traffic/install-traffic.sh /usr/local/sbin/install-traffic 0755
+/usr/local/sbin/install-traffic

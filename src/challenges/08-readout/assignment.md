@@ -25,7 +25,7 @@ of the four rows:
 
 - **Status**: `Met` or `Not met`.
 - **Evidence**: one line the customer can check. Name the screen, the workload, or the command, for
-  example "Map, App Claims: kp-rpt01 to kp-sql01:1433 blocked; `ncat` times out".
+  example "Map, App Claims: kp-rpt01 to kp-sql01:1433 blocked; the connection test prints BLOCKED".
 
 Save the file.
 

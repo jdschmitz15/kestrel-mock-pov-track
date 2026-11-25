@@ -21,7 +21,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 900
-enhanced_loading: null
 ---
 The POV ends with a readout, not a demo. The champion takes your success criteria table to their boss.
 
@@ -30,7 +29,7 @@ of the four rows:
 
 - **Status**: `Met` or `Not met`.
 - **Evidence**: one line the customer can check. Name the screen, the workload, or the command, for
-  example "Map, App Claims: kp-rpt01 to kp-sql01:1433 blocked; `ncat` times out".
+  example "Map, App Claims: kp-rpt01 to kp-sql01:1433 blocked; the connection test prints BLOCKED".
 
 Save the file.
 

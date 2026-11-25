@@ -44,6 +44,7 @@ The Portal app's region is `AWS_REGION` at the top of `src/track_scripts/setup-k
 | `assets/terraform/` | AWS Portal app: VPC, ALB, 2 web + 2 app EC2, RDS Postgres + replica, VPC flow logs to S3 |
 | `assets/ipfix-gen/` | IPFIX exporter on kp-flow01, built from netflow_generator 0.2.8 |
 | `assets/bin/` | Student helpers: `pov-connect`, `pce`, `preflight`, `kp` (SSM), `org-reset` |
+| `assets/traffic/` | `traffic.csv` (who talks to whom) and the Linux installer for [traffic-generator](https://github.com/jdschmitz15/traffic-generator) v1.0.5; the Windows installer is `assets/windows/install-traffic.ps1` |
 | `assets/kestrel/` | Scoping sheet, label plan, answer sheet |
 
 ## Challenges
@@ -59,6 +60,19 @@ The Portal app's region is `AWS_REGION` at the top of `src/track_scripts/setup-k
 | 7 | Ringfence Claims and enforce | Ruleset active, web and DB in full, rpt01 blocked from 1433, app returns 200 |
 | 8 | Readout | Success criteria filled with status and evidence |
 
+## Lab traffic
+
+Six VMs (kp-client01, kp-web01, kp-sql01, kp-rpt01, kp-ubu01, kp-win01) run `traffic-generator
+continuous` against the same `assets/traffic/traffic.csv`. Each host listens on rows where it is
+`dst` and connects on rows where it is `src`, every 1 to 10 minutes. Add a row to add a flow; columns
+after `proto` are ignored. Logs: `/var/log/traffic-generator.log` on Linux,
+`C:\kestrel\traffic\traffic-generator.log` on Windows.
+
+The app's own traffic (users to kp-web01:80, kp-web01 to kp-sql01:1433, and the reporting job to
+kp-sql01:1433) comes from the real Claims app, the cron job on kp-rpt01 and the curl loop on
+kp-client01, not from the CSV. After challenge 7 enforces kp-web01 and kp-sql01, their 443 and
+syslog rows show as blocked. That is expected and gives students blocked flows to look at.
+
 ## Between runs
 
 `cleanup-kp-client01` runs `org-reset --yes` (unpairs VENs, deletes the POV rulesets, labels and
@@ -73,7 +87,9 @@ These are written from documentation and could not be run here:
    `instruqt/windows-server`, and that track secrets reach them as environment variables.
 2. **SQL Express:** that the `sql-server-express` Chocolatey package installs SQL 2022 as
    `MSSQL16.SQLEXPRESS` (the registry path in `install-sql-express.ps1`).
-3. **ncat for Windows:** the `ncat-portable-5.59BETA1.zip` URL on nmap.org.
+3. **traffic-generator hostname match:** it matches CSV rows on the exact hostname. Linux uses the
+   VM name; on Windows the installer swaps the host's own name for its IP, in case Windows reports the
+   name in upper case. Check `traffic-generator.log` on each host shows its listeners and connections.
 4. **VEN pairing commands in the solve scripts:** the `/api/v25/software/ven/image?pair_script=...`
    format. Compare with what your PCE shows under Generate Key.
 5. **NEN:** the `illumio-nen-ctl activate` flags, the IPFIX collector setup for UDP 4739 (the

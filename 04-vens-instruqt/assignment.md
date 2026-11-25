@@ -3,8 +3,7 @@ slug: vens-instruqt
 id: 2taqkmhzt9vn
 type: challenge
 title: Install VENs and pair the NEN
-teaser: Pair VENs on six data center servers in visibility only, and pair the NEN
-  that collects IPFIX.
+teaser: Pair VENs on six data center servers in visibility only, and pair the NEN that collects IPFIX.
 tabs:
 - id: g5krmje8etxl
   title: Client
@@ -49,7 +48,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 1800
-enhanced_loading: null
 ---
 Now install VENs on the six data center servers, and pair the NEN that will receive IPFIX from the
 "core switch" (ask 3: a scanner with no agent).

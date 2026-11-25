@@ -3,8 +3,7 @@ slug: label-and-find
 id: ety1hahpxpfc
 type: challenge
 title: Label the apps and find the findings
-teaser: Apply the four-dimension labels, then use the map to answer the security team's
-  questions.
+teaser: Apply the four-dimension labels, then use the map to answer the security team's questions.
 tabs:
 - id: qdodjvuxfihd
   title: Client
@@ -22,7 +21,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 1500
-enhanced_loading: null
 ---
 A map of IP addresses means nothing to a customer. Labels turn it into their apps. The label plan was
 agreed during scoping and is in `labels.csv` (open it in the **Scoping sheet** tab).

@@ -1,19 +1,11 @@
 #!/bin/bash
-# Ubuntu VEN practice host: netcat listener on 8443.
+# Ubuntu VEN practice host: traffic-generator listens on 8443 and talks to its neighbours.
 set -euxo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y netcat-openbsd curl
+apt-get install -y curl python3
 #@file assets/bin/preflight.sh /usr/local/bin/preflight 0755
-cat > /etc/systemd/system/kestrel-nc.service <<'UNIT'
-[Unit]
-Description=Kestrel netcat listener on 8443
-After=network-online.target
-[Service]
-ExecStart=/bin/nc -lk 8443
-Restart=always
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl daemon-reload
-systemctl enable --now kestrel-nc
+# Lab traffic between the servers (rows in assets/traffic/traffic.csv)
+#@file assets/traffic/traffic.csv /opt/traffic/traffic.csv 0644
+#@file assets/traffic/install-traffic.sh /usr/local/sbin/install-traffic 0755
+/usr/local/sbin/install-traffic

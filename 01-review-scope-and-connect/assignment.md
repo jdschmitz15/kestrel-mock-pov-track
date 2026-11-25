@@ -3,8 +3,7 @@ slug: review-scope-and-connect
 id: hkvqu60txob9
 type: challenge
 title: Review the scope and connect to your PCE
-teaser: Read the signed-off scoping sheet, then connect the lab to your own SaaS PCE
-  org.
+teaser: Read the signed-off scoping sheet, then connect the lab to your own SaaS PCE org.
 tabs:
 - id: cpikc6exxpjh
   title: Scoping sheet
@@ -22,7 +21,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 900
-enhanced_loading: null
 ---
 Kestrel Point Insurance has signed off the POV scope. Discovery is done, so your job today is to
 deliver what the scoping sheet promises.

@@ -22,7 +22,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 1200
-enhanced_loading: null
 ---
 RDS can't run a VEN, but the security team wants to see what talks to it (ask 2). CloudSecure reads
 the AWS account's inventory and VPC flow logs, so RDS shows up on the map without an agent.

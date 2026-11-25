@@ -1,0 +1,11 @@
+src,dst,port,proto,purpose
+kp-client01,kp-web01,443,tcp,Users try HTTPS on the Claims web server
+kp-client01,kp-ubu01,8443,tcp,Users reach the Ubuntu platform app
+kp-client01,kp-win01,9443,tcp,Users reach the Windows platform app
+kp-ubu01,kp-win01,9443,tcp,Ubuntu app calls the Windows app
+kp-win01,kp-ubu01,8443,tcp,Windows app calls the Ubuntu app
+kp-web01,kp-rpt01,514,udp,Claims web ships syslog to the reporting server
+kp-sql01,kp-rpt01,514,udp,Claims database ships syslog to the reporting server
+kp-ubu01,kp-rpt01,514,udp,Ubuntu ships syslog to the reporting server
+kp-win01,kp-rpt01,514,udp,Windows ships syslog to the reporting server
+kp-rpt01,kp-web01,8080,tcp,Reporting server pulls the Claims export

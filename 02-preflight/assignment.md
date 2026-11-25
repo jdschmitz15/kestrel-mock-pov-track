@@ -3,8 +3,7 @@ slug: preflight
 id: ekp1bgkdryyq
 type: challenge
 title: Run pre-flight checks
-teaser: Confirm every in-scope server runs a supported OS and can reach the PCE on
-  443.
+teaser: Confirm every in-scope server runs a supported OS and can reach the PCE on 443.
 tabs:
 - id: lvs0wjebkt5m
   title: Client
@@ -36,7 +35,6 @@ tabs:
   port: 8080
 difficulty: basic
 timelimit: 900
-enhanced_loading: null
 ---
 Before you install anything, prove that each server can take a VEN. On a real POV this is the check that
 saves you a wasted morning: an unsupported OS or a blocked firewall rule is found now, not during install.

@@ -39,6 +39,7 @@ In **Policy > Rulesets** add a ruleset named exactly **Claims | POV**, scoped to
 | 2 | Role Web | Role DB | TCP 1433 | App reaches its database |
 | 3 | IP list **Any (0.0.0.0/0 and ::/0)** (extra-scope) | All workloads | TCP 22, 3389, 5985 | Keeps the lab terminals and RDP working |
 | 4 | All workloads | IP list **Any (0.0.0.0/0 and ::/0)** | UDP 53, TCP 53 | DNS out |
+| 5 | Role Batch, App Reporting (extra-scope) | Role Web | TCP 8080 | Reporting pulls the Claims export through the app, as the security team asked |
 
 **Provision** the ruleset.
 
@@ -62,10 +63,19 @@ Enforcement**).
 In the **Reporting** tab:
 
 ```bash
-ncat -zv -w 3 kp-sql01 1433
+timeout 3 bash -c '</dev/tcp/kp-sql01/1433' && echo OPEN || echo BLOCKED
 ```
 
-It should time out. In the **Client** tab the app still works:
+It should print `BLOCKED`. The lab's traffic generator shows the same thing from both sides of
+the rule:
+
+```bash
+tail -n 5 /var/log/traffic-generator.log
+```
+
+Connections to `kp-web01:8080` (rule 5) keep getting responses.
+
+In the **Client** tab the app still works:
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' http://kp-web01/

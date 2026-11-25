@@ -13,3 +13,7 @@ python3 -m venv /opt/claims/venv
 systemctl daemon-reload
 systemctl enable --now claims-api
 systemctl restart nginx
+# Lab traffic between the servers (rows in assets/traffic/traffic.csv)
+#@file assets/traffic/traffic.csv /opt/traffic/traffic.csv 0644
+#@file assets/traffic/install-traffic.sh /usr/local/sbin/install-traffic 0755
+/usr/local/sbin/install-traffic

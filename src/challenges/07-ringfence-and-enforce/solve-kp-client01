@@ -22,6 +22,8 @@ if rs is None:
          "unscoped_consumers": True, "ingress_services": tcp(22, 3389, 5985)},
         {"providers": [{"ip_list": {"href": anyip}}], "consumers": [{"actors": "ams"}],
          "unscoped_consumers": False, "ingress_services": [{"port": 53, "proto": 17}, {"port": 53, "proto": 6}]},
+        {"providers": [L("role", "Web")], "consumers": [L("role", "Batch"), L("app", "Reporting")],
+         "unscoped_consumers": True, "ingress_services": tcp(8080)},
     ]
     for r in rules:
         r.update(enabled=True, resolve_labels_as=as_wl)

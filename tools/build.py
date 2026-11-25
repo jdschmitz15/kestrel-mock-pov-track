@@ -14,7 +14,7 @@ src/challenges/<dir>/*   -> <dir>/*   (challenge folders; assignment.md is copie
 
 Run from the repo root:  python3 tools/build.py
 """
-import base64, io, os, sys, tarfile, textwrap
+import base64, io, os, re, sys, tarfile, textwrap
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "src", "track_scripts")
@@ -63,6 +63,17 @@ def render(text):
     return "".join(out)
 
 
+def keep_instruqt_ids(new, old):
+    """`instruqt track push` writes ids into assignment.md. Carry them over so a rebuild doesn't
+    drop them: the challenge id goes after `slug:`, and tab ids are matched by tab title."""
+    m = re.search(r"^id: (\S+)$", old, re.M)
+    if m and not re.search(r"^id: ", new, re.M):
+        new = re.sub(r"^(slug: .*)$", r"\1\nid: " + m.group(1), new, count=1, flags=re.M)
+    for tab_id, title in re.findall(r"^- id: (\S+)\n  title: (.*)$", old, re.M):
+        new = new.replace(f"\n- title: {title}\n", f"\n- id: {tab_id}\n  title: {title}\n", 1)
+    return new
+
+
 SYNC = [  # files Terraform user-data needs, copied next to it before bundling
     ("assets/app/portal_api.py", "assets/terraform/files/portal_api.py"),
     ("assets/bin/preflight.sh", "assets/terraform/files/preflight.sh"),
@@ -91,8 +102,13 @@ def main():
             with open(os.path.join(csrc, chal, name)) as f:
                 text = f.read()
             target = os.path.join(ROOT, chal, name)
+            if name.endswith(".md"):
+                if os.path.exists(target):
+                    text = keep_instruqt_ids(text, open(target).read())
+            else:
+                text = render(text)
             with open(target, "w") as f:
-                f.write(text if name.endswith(".md") else render(text))
+                f.write(text)
             if not name.endswith(".md"):
                 os.chmod(target, 0o755)
         print(f"built {chal}/")

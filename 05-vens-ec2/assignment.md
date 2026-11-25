@@ -22,7 +22,6 @@ tabs:
   new_window: true
 difficulty: basic
 timelimit: 1200
-enhanced_loading: null
 ---
 The Portal app runs on four EC2 instances with no public IP and no SSH keys. That is normal at
 customers: you use the tools they already have. Here that is AWS Systems Manager.
